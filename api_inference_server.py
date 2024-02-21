@@ -9,12 +9,9 @@ from vtube_studio import Char_control
 import romajitable # temporary use this since It'll blow up our ram if we use Machine Translation Model
 import scipy.io.wavfile as wavfile
 import torch
-import wget 
-import wave
 from pprint import pprint
 from omegaconf import OmegaConf
 from IPython.display import Audio, display
-import pyaudio
 import librosa
 import soundfile as sf
 from fastapi import FastAPI, WebSocket
