@@ -12,10 +12,113 @@ import logging
 from IPython.display import Audio, display
 import io
 import simpleaudio as sa
+from twitchAPI.twitch import Twitch
+from twitchAPI.oauth import UserAuthenticator
+from twitchAPI.type import AuthScope, ChatEvent
+from twitchAPI.chat import Chat, EventData, ChatMessage, ChatSub, ChatCommand
+import asyncio
 logging.getLogger("requests").setLevel(logging.WARNING) # make requests logging only important stuff
 logging.getLogger("urllib3").setLevel(logging.WARNING) # make requests logging only important stuff
 
 talk = character_msg_constructor("Lilia", None) # initialize character_msg_constructor
+
+
+
+APP_ID = '81p5jd0tto1jpnt7ykncg6urwpzc33'
+APP_SECRET = '2uw93kfvz6yua7sn07du8cdiig6kug'
+USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
+TARGET_CHANNEL = 'kravtandr'
+
+async def on_ready(ready_event: EventData):
+    print('Bot is ready for work, joining channels')
+    # join our target channel, if you want to join multiple, either call join for each individually
+    # or even better pass a list of channels as the argument
+    await ready_event.chat.join_room(TARGET_CHANNEL)
+    # you can do other bot initialization things in here
+
+async def on_message(msg: ChatMessage):
+    print(f'in {msg.room.name}, {msg.user.name} said: {msg.text}')
+    try:
+            # ----------- Create Response --------------------------
+            con = msg.text
+            print("con = ", con)
+            emo_answer = chat(con).replace("\"","") # send message to api
+            print("emo_answer = ", emo_answer)
+            emo, answer, audio = emo_answer.split("<split_token>")
+            print("**"+emo)
+            print("type audio: ", type(audio))
+            if len(answer) > 2:
+                use_answer = answer
+                sample_rate = 48000
+                # # audio_otput = Audio(audio, rate=sample_rate)
+                output_filename = 'test_output_sound.wav'
+                
+                
+                # baudio = bytes(audio, 'utf-8')
+                # print(baudio)
+                # Open the file in binary write mode ('wb')
+                import base64
+                audio = base64.b64decode(audio)
+                # audio = audio.encode('utf-8')
+                with open(output_filename, 'wb') as file:
+                    file.write(audio)
+                
+                # wave_obj = sa.WaveObject.from_wave_file(output_filename) 
+                # play = wave_obj.play() 
+            
+                # display(sound_data)
+                # sf.write(output_filename, sound_data, sample_rate, 'PCM_24')
+                # ------------------------------------------------------
+                print(f'Answer: {answer}')
+                if answer.strip().endswith(f'{talk.name}:') or answer.strip() == '':
+                    pass # skip audio processing if the answer is just the name (no talking)
+                else:
+                    # ----------- Waifu Talking -----------------------
+                    wave_obj = sa.WaveObject.from_wave_file(output_filename) 
+                    play = wave_obj.play() 
+
+                # --------------------------------------------------
+                if emo:  ## express emotion
+                    waifu.express(emo)  # express emotion in Vtube Studio
+                # --------------------------------------------------
+    except Exception as e:
+            print('--------- Exception Occured ---------')
+            print(f'*Line {e.__traceback__.tb_lineno}: {e}')
+            print('-------------------------------------')
+
+async def run():
+    # set up twitch api instance and add user authentication with some scopes
+    twitch = await Twitch(APP_ID, APP_SECRET)
+    auth = UserAuthenticator(twitch, USER_SCOPE)
+    token, refresh_token = await auth.authenticate()
+    await twitch.set_user_authentication(token, USER_SCOPE, refresh_token)
+    # user = await first(twitch.get_users(logins='kravtandr'))
+    # # print the ID of your user or do whatever else you want with it
+    # print(user.id)
+
+    # create chat instance
+    chat = await Chat(twitch)
+
+    # register the handlers for the events you want
+
+    # listen to when the bot is done starting up and ready to join channels
+    chat.register_event(ChatEvent.READY, on_ready)
+    # listen to chat messages
+    chat.register_event(ChatEvent.MESSAGE, on_message)
+
+    # we are done with our setup, lets start this bot up!
+    chat.start()
+
+    # lets run till we press enter in the console
+    try:
+        input('press ENTER to stop\\n')
+    finally:
+        # now we can close the chat bot and the twitch api client
+        chat.stop()
+        await twitch.close()
+
+
+# lets run our setup
 
 
 
@@ -35,8 +138,8 @@ def chat(msg, reset=False):
         'data': msg,
     }
     try:
-        # r = requests.get('http://141.105.66.7:8267/waifuapi', params=params)
-        r = requests.get('http://127.0.0.1:8267/waifuapi', params=params)
+        r = requests.get('http://141.105.66.7:8267/waifuapi', params=params)
+        # r = requests.get('http://127.0.0.1:8267/waifuapi', params=params)
     except requests.exceptions.ConnectionError as e:
         print('--------- Exception Occured ---------')
         print('if you have run the server on different device, please specify the ip address of the server with the port')
@@ -49,6 +152,7 @@ def chat(msg, reset=False):
 
 split_counter = 0
 history = ''
+asyncio.run(run())
 while True:
     try:
         con = str(input("You: "))
@@ -62,7 +166,9 @@ while True:
             continue # reset story skip to next loop
 
         # ----------- Create Response --------------------------
+        print("con = ", con)
         emo_answer = chat(con).replace("\"","") # send message to api
+        print("emo_answer = ", emo_answer)
         emo, answer, audio = emo_answer.split("<split_token>")
         print("**"+emo)
         print("type audio: ", type(audio))
