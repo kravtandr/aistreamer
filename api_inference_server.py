@@ -37,12 +37,12 @@ if use_gpu:
     print("GPU detected!")
     device = torch.device('cuda')
     print("Using GPU? (Y/N)")
-    if input().lower() == 'y':
-        print("Using GPU...")
-    else:
-        print("Using CPU...")
-        use_gpu = False
-        device = torch.device('cpu')
+    # if input().lower() == 'y':
+    #     print("Using GPU...")
+    # else:
+    #     print("Using CPU...")
+    #     use_gpu = False
+    #     device = torch.device('cpu')
 
 # ---------- load Conversation model ----------
 print("Initilizing model....")
@@ -63,11 +63,11 @@ model = AutoModelForCausalLM.from_pretrained("PygmalionAI/pygmalion-1.3b", confi
 if use_gpu: # load model to GPU
   model = model.to(device)
   print("Inference at half precision? (Y/N)")
-  if input().lower() == 'y':
-      print("Loading model at half precision...")
-      model.half()
-  else:
-      print("Loading model at full precision...")
+#   if input().lower() == 'y':
+#       print("Loading model at half precision...")
+#       model.half()
+#   else:
+#       print("Loading model at full precision...")
 
 if translation:
     print("Translation enabled!")
