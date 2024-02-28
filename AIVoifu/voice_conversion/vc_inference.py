@@ -24,7 +24,9 @@ class vc_inference:
         
         print("Initializing Waifu Voice Conversion Pipeline...")
         # ask if download zoo model or select from local
-        want_to_use_zoo = input('Download New model from zoo? (Y/n): ').lower() in ['y', '']
+        # want_to_use_zoo = input('Download New model from zoo? (Y/n): ').lower() in ['y', '']
+        want_to_use_zoo = ''
+
         if want_to_use_zoo:
             name, checkpoint_link, feature_retrieval_library_link, feature_file_link = self.__select_model_from_zoo()
             self.pretrain_model_name = name
@@ -43,7 +45,8 @@ class vc_inference:
                 print('No checkpoint detected. Downloading checkpoint...')
                 print(f'Using model: {self.pretrain_model_name}')
                 print(f'Link: {self.checkpoint_link}')
-                load_checkpoint = input('Load checkpoint? (Y/n): ').lower() in ['y', '']
+                # load_checkpoint = input('Load checkpoint? (Y/n): ').lower() in ['y', '']
+                load_checkpoint = ''
 
             if load_checkpoint:
                 print('Downloading checkpoint...')
@@ -101,7 +104,9 @@ class vc_inference:
             Load_Hubert = True
         else:
             print('Hubert model already exists. want to download a new one?')
-            if input('(Y/n): ').lower() in ['y', '']:
+            # choice = input('(Y/n): ').lower() in ['y', '']
+            choice = ''
+            if choice:
                 self.__load_hubert_model(file_root)
                 Load_Hubert = True
 

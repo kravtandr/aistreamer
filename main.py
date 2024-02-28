@@ -1,16 +1,8 @@
 print('Initializing... Dependencies')
 from Conversation.conversation import character_msg_constructor
 from vtube_studio import Char_control
-import romajitable # temporary use this since It'll blow up our ram if we use Machine Translation Model
-import pyaudio
-import soundfile as sf
-import scipy.io.wavfile as wavfile
 import requests
-import random
-import os
 import logging
-from IPython.display import Audio, display
-import io
 import simpleaudio as sa
 from twitchAPI.twitch import Twitch
 from twitchAPI.oauth import UserAuthenticator
