@@ -14,7 +14,7 @@ logging.getLogger("urllib3").setLevel(logging.WARNING) # make requests logging o
 logging.getLogger("requests").setLevel(logging.WARNING) # make requests logging only important stuff
 logging.getLogger("urllib3").setLevel(logging.WARNING) # make requests logging only important stuff
 
-talk = character_msg_constructor("Lilia", None) # initialize character_msg_constructor
+talk = character_msg_constructor("Аня", None) # initialize character_msg_constructor
 
 import ssl
 

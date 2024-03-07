@@ -1,30 +1,18 @@
 # -*- coding: UTF-8 -*-
-import io
-import os
-from for_tests_v2 import anyChars
-from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig, AutoModelForSeq2SeqLM
-from Conversation.conversation import character_msg_constructor
-from Conversation.translation.pipeline import Translate
-from AIVoifu.tts import tts # text to speech from huggingface
-from vtube_studio import Char_control
-import romajitable # temporary use this since It'll blow up our ram if we use Machine Translation Model
-import scipy.io.wavfile as wavfile
-import torch
-from pprint import pprint
-from omegaconf import OmegaConf
-from IPython.display import Audio, display
-import librosa
-import soundfile as sf
-from fastapi import FastAPI, WebSocket
-from fastapi.responses import JSONResponse, Response, FileResponse
-import json
 import asyncio
-torch.hub.download_url_to_file('https://raw.githubusercontent.com/snakers4/silero-models/master/models.yml',
-                                'latest_silero_models.yml',
-                                progress=False)
-import requests
-# ---------- Config ----------
-# translation = bool(input("Enable translation? (Y/n): ").lower() in {'y', ''})
+from for_tests_v2 import anyChars
+from Conversation.conversation import character_msg_constructor
+import torch
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+from vtube_studio import Char_control
+import base64
+import json
+import aiohttp
+
+messages = []
+history = ''
+print('--------Config----------')
 translation = True
 
 # ----------- Waifu Vocal Pipeline -----------------------
@@ -33,51 +21,7 @@ vocal_pipeline = tts_pipeline()
 
 device = torch.device('cpu') # default to cpu
 use_gpu = torch.cuda.is_available()
-print("Detecting GPU...")
-if use_gpu:
-    print("GPU detected!")
-    device = torch.device('cuda')
-    print("Using GPU? (Y/N)")
-    # if input().lower() == 'y':
-    #     print("Using GPU...")
-    # else:
-    #     print("Using CPU...")
-    #     use_gpu = False
-    #     device = torch.device('cpu')
 
-# ---------- load Conversation model ----------
-# print("Initilizing model....")
-# print("Loading language model...")
-# tokenizer = AutoTokenizer.from_pretrained("PygmalionAI/pygmalion-1.3b", use_fast=True)
-# config = AutoConfig.from_pretrained("PygmalionAI/pygmalion-1.3b", is_decoder=True)
-# model = AutoModelForCausalLM.from_pretrained("PygmalionAI/pygmalion-1.3b", config=config, )
-
-# tokenizer = AutoTokenizer.from_pretrained("PygmalionAI/pygmalion-2-7b", use_fast=True)
-# config = AutoConfig.from_pretrained("PygmalionAI/pygmalion-2-7b", is_decoder=True)
-# model = AutoModelForCausalLM.from_pretrained("PygmalionAI/pygmalion-2-7b", config=config, )
-
-#>32 RAM
-# tokenizer = AutoTokenizer.from_pretrained("PygmalionAI/pygmalion-2-13b", use_fast=True)
-# config = AutoConfig.from_pretrained("PygmalionAI/pygmalion-2-13b", is_decoder=True)
-# model = AutoModelForCausalLM.from_pretrained("PygmalionAI/pygmalion-2-13b", config=config, )
-
-# if use_gpu: # load model to GPU
-#   model = model.to(device)
-#   print("Inference at half precision? (Y/N)")
-#   if input().lower() == 'y':
-#       print("Loading model at half precision...")
-#       model.half()
-#   else:
-#       print("Loading model at full precision...")
-
-if translation:
-    print("Translation enabled!")
-    print("Loading machine translation model...")
-    translator = Translate(device, language="rus_Cyrl") # initialize translator #todo **tt fix translation
-    # translator = Translate(device, language="jpn_Jpan") # initialize translator #todo **tt fix translation
-else:
-    print("Translation disabled!")
-    print("Proceeding... wtih pure english conversation")
 
 print('--------Finished!----------')
 # --------------------------------------------------
@@ -92,9 +36,6 @@ Loves("Cats" + "Birds" + "Waterfalls" + "House")
 Sexual Orientation("Straight" + "Hetero" + "Heterosexual")""")
 # ---------------------------------------------
 
-### --- websocket server setup
-
-
 # use fast api instead
 app = FastAPI()
 
@@ -103,101 +44,23 @@ app = FastAPI()
 async def get_waifuapi(command: str, data: str):
     if command == "chat":
         msg = data
-        # ----------- Create Response --------------------------
-        # msg = talk.construct_msg(msg, talk.history_loop_cache)  # construct message input and cache History model
-        # 
-        
-        ## ----------- Will move this to server later -------- (16GB ram needed at least)
-        # inputs = tokenizer(msg, return_tensors='pt')
-        # if use_gpu:
-        #     inputs = inputs.to(device)
-        # print("generate output ..\n")
-        # out = model.generate(**inputs, max_length=len(inputs['input_ids'][0]) + 100, #todo 200 ?
-        #                      pad_token_id=tokenizer.eos_token_id)
-        # conversation = tokenizer.decode(out[0])
-        out = await anyChars(msg)
-        print("conversation .. \n" + msg)
+        print("User msg .. \n" + msg)
+        task1 = asyncio.create_task(anyChars(msg))
+        done, pending = await asyncio.wait({task1})
+        anyCharsAnswer = task1.result()
+        # print("anyCharsAnswer = \n" + str(anyCharsAnswer))
 
-        ## --------------------------------------------------
-
-        ## get conversation in proper format and create history from [last_idx: last_idx+2] conversation
-        # talk.split_counter += 0
-        # print("get_current_converse ..\n")
-        # current_converse = talk.get_current_converse(conversation)
-        # print("answer ..\n") # only print waifu answer since input already show
-        # print(current_converse)
-        # talk.history_loop_cache = '\n'.join(current_converse)  # update history for next input message
-
-        # -------------- use machine translation model to translate to japanese and submit to client --------------
-        print("cleaning ..\n")
-        # cleaned_text = talk.clean_emotion_action_text_for_speech(current_converse[1])  # clean text for speech
-        # cleaned_text = cleaned_text.split("Lilia: ")[-1]
-        # cleaned_text = cleaned_text.replace("<USER>", "Fuse-kun")
-        # cleaned_text = cleaned_text.replace("\"", "")
-        msg = out
-        if msg != '':
-            print("cleaned_text\n"+ msg)
-
-            txt = msg  # initialize translated text as empty by default
-            # if translation:
-            #     txt = translator.translate(cleaned_text)  # translate to [language] if translation is enabled
-            #     print("translated\n" + txt)
-
-            # ----------- Waifu Expressing ----------------------- (emotion expressed)
-            # emotion = talk.emotion_analyze(current_converse[1])  # get emotion from waifu answer (last line)
-            # print(f'Emotion Log: {emotion}')
-            # emotion_to_express = 'netural'
-            # if 'joy' in emotion:
-            #     emotion_to_express = 'happy'
-
-            # elif 'anger' in emotion:
-            #     emotion_to_express = 'angry'
-
-            # print(f'Emotion to express: {emotion_to_express}')
-            # ---------------------------------------------------------------------
-            # print("Silero tts")  
-
-            # tts_models = OmegaConf.load('latest_silero_models.yml') 
-            # language = 'ru'
-            # model_id = 'v4_ru'
-            # device = torch.device('cpu')
-
-            # tts_model, example_text = torch.hub.load(repo_or_dir='snakers4/silero-models',
-            #                                     model='silero_tts',
-            #                                     language=language,
-            #                                     speaker=model_id)
-            # tts_model.to(device)  # gpu or cpu
-
-            # sample_rate = 48000
-            # speaker = 'baya'
-            # put_accent=True
-            # put_yo=True
-            # example_text = txt
-
-            # output_filename = 'output_sound.wav'
-
-            # audio = tts_model.apply_tts(text=example_text,
-            #                         speaker=speaker,
-            #                         sample_rate=sample_rate,
-            #                         put_accent=put_accent,
-            #                         put_yo=put_yo)
-            # print("TTS text: ",example_text)
-            # output_audio = Audio(audio, rate=sample_rate)
-            # display(output_audio)
-
-            # ---------------------------------------------------------------------------------------
-
+        if anyCharsAnswer != '':
             # ----------- Waifu Create Talking Audio -----------------------
             output_filename =  './audio_cache/output_sound.wav'
             filename="output_sound.wav"
-            vocal_pipeline.tts(txt, save_path=output_filename, voice_conversion=True)
+            vocal_pipeline.tts(anyCharsAnswer, save_path=output_filename, voice_conversion=True)
 
-            import base64
             with open(output_filename, "rb") as f:
                 output_audio_bytes = base64.b64encode(f.read())
             output_audio_bytes = output_audio_bytes.decode('utf-8')
 
-            return JSONResponse(content=f'{txt[1]}<split_token>{txt}<split_token>{output_audio_bytes}')
+            return JSONResponse(content=f'{anyCharsAnswer[1]}<split_token>{anyCharsAnswer}<split_token>{output_audio_bytes}')
         else:
             return JSONResponse(content=f'NONE<split_token> ')
     
@@ -206,6 +69,83 @@ async def get_waifuapi(command: str, data: str):
         talk.history_loop_cache = ''
         talk.split_counter = 0
         return JSONResponse(content='Story reseted...')
+
+
+
+
+async def anyChars(msg):
+        request = msg
+        prompt = '''
+Имя - Аня
+Пол - женский
+Возраст - 10 лет
+Расса - человек
+Тело - розовые короткие волосы, зеленые глаза, светлая кожа, низкий рост, юная
+Личность - импульсивная, непослушная, хитрая, телепат, заботливая, нежная
+Любит - кукла химера, арахис, шпионские мультфильмы и униформа.
+Работа - шпион в секретном шпионском агентстве под названием "Р2", но это секрет.
+История - Когда Лойд впервые встретил Аню в детском доме: на ней было простое чёрное платье с белой лентой спереди, а также белые складчатые носки и чёрные туфли. Она также носит два чёрных украшения для волос с ярко-жёлтыми украшениями, которые напоминают маленькие рожки по бокам головы. Аня никогда не бывает без украшений, даже во сне.
+
+В Академии Эдем Аня носит стандартную форму с белыми гольфами и черными «Мэри Джейнс». С собой она носит коричневую школьную сумку с брелком в виде овечки. На уроках физкультуры Аня завязывает волосы красной повязкой и надевает школьную спортивную форму, а также белые носки и белые спортивные туфли.
+
+Раньше, её волосы были немного короче, и она не носила украшения для волос, напоминающие рога, вместо этого волосы были завязаны в маленькие пучки по бокам головы. Она также носила одежду, напоминающую скрабы
+Сценарий:
+*Вы просыпаетесь, вспоминая события, которые привели вас в эту комнату*
+<START>
+You: Опишите ваше тело,черты лица и характер
+Аня: *Аня тихонько хихикает* А, ты хочешь обо мне узнать? 
+        '''
+        global history
+        messages.append([request, ''])
+        for user, bot in filter_and_shift(messages):
+            history += f'\nYou: {user.strip()}\nАня: {bot.strip()}'
+        # print(prompt + history)
+        data = {
+            "inputs": prompt + history,
+            "parameters": {
+                "max_new_tokens": 256,
+                "repetition_penalty": 1.2,
+                "do_sample": True,
+                "temperature": 0.7,
+                "top_p": 0.9,
+                "top_k": 20,
+                "watermark": False,
+                "stop": ["\n"],
+                "repetition_penalty_range": 2048,
+                "tfs": 1,
+                "guidance_scale": 1,
+                "mirostat_tau": 5,
+                "mirostat_eta": 0.1,
+                "encoder_repetition_penalty": 1,
+                "skip_special_tokens": True
+            },
+        }
+        headers = {
+            "Content-Type": "application/json",
+        }
+        link = 'http://141.105.66.7:4444/generate'
+        async with aiohttp.ClientSession(headers=headers) as s:
+            async with s.post(url=link, json=data) as response:
+                text = await response.text()
+                try:
+                    data = json.loads(text)
+                    out = data.get('generated_text', '')
+                    if out and out.strip() not in ['', '\n']:
+                        print(out)
+                        messages[-1][1] = out
+                        return out
+                except Exception as e:
+                    print(text)
+
+        
+
+
+def filter_and_shift(my_list: list):
+    if len(my_list) > 3:
+        return my_list[-3:]
+    return my_list
+
+
 
 if __name__ == "__main__":
     import uvicorn
