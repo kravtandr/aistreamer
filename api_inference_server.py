@@ -42,29 +42,40 @@ app = FastAPI()
 # do a http server instead
 @app.get("/waifuapi")
 async def get_waifuapi(command: str, data: str):
+    print("_________1___________")
+    anyCharsAnswer = ''
+    global history
+    history = (history[10000:20000]) if len(history) > 20000  else history
     if command == "chat":
+        print("_________2___________")
         msg = data
         print("User msg .. \n" + msg)
-        task1 = asyncio.create_task(anyChars(msg))
-        done, pending = await asyncio.wait({task1})
-        anyCharsAnswer = task1.result()
+
+        anyCharsAnswer = await anyChars(msg)
+        
         # print("anyCharsAnswer = \n" + str(anyCharsAnswer))
-        anyCharsAnswer = anyCharsAnswer.replace('.', '')
         if anyCharsAnswer != '':
-            # delite '.' from anyCharsAnswer if . more than 1
-            print("Cleaned .. \n" + anyCharsAnswer)
-            # ----------- Waifu Create Talking Audio -----------------------
-            output_filename =  './audio_cache/output_sound.wav'
-            filename="output_sound.wav"
-            vocal_pipeline.tts(anyCharsAnswer, save_path=output_filename, voice_conversion=True)
+            print("_________3___________")
+            # anyCharsAnswer = anyCharsAnswer.replace('.', '')
+            if anyCharsAnswer != '':
+                print("_________4___________")
+                # delite '.' from anyCharsAnswer if . more than 1
+                # print("Cleaned .. \n" + anyCharsAnswer)
+                # ----------- Waifu Create Talking Audio -----------------------
+                output_filename =  './audio_cache/output_sound.wav'
+                filename="output_sound.wav"
+               
+                vocal_pipeline.tts(anyCharsAnswer, save_path=output_filename, voice_conversion=True)
 
-            with open(output_filename, "rb") as f:
-                output_audio_bytes = base64.b64encode(f.read())
-            output_audio_bytes = output_audio_bytes.decode('utf-8')
+                with open(output_filename, "rb") as f:
+                    output_audio_bytes = base64.b64encode(f.read())
+                output_audio_bytes = output_audio_bytes.decode('utf-8')
 
-            return JSONResponse(content=f'{anyCharsAnswer[1]}<split_token>{anyCharsAnswer}<split_token>{output_audio_bytes}')
-        else:
-            return JSONResponse(content=f'NONE<split_token> ')
+                return JSONResponse(content=f'{anyCharsAnswer[1]}<split_token>{anyCharsAnswer}<split_token>{output_audio_bytes}')
+            else:
+                return JSONResponse(content=f'NONE<split_token> ')
+        print("_________END___________")
+
     
     if command == "reset":
         talk.conversation_history = ''
