@@ -173,8 +173,8 @@ def chat(msg, reset=False):
         'data': msg,
     }
     try:
-        r = requests.get('http://141.105.66.7:8267/waifuapi', params=params)
-        # r = requests.get('http://127.0.0.1:8267/waifuapi', params=params)
+        # r = requests.get('http://141.105.66.7:8267/waifuapi', params=params)
+        r = requests.get('http://127.0.0.1:8267/waifuapi', params=params)
     except requests.exceptions.ConnectionError as e:
         print('--------- Exception Occured ---------')
         print('if you have run the server on different device, please specify the ip address of the server with the port')

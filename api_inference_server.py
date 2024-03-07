@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
 import io
 import os
+from for_tests_v2 import anyChars
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig, AutoModelForSeq2SeqLM
 from Conversation.conversation import character_msg_constructor
 from Conversation.translation.pipeline import Translate
@@ -45,11 +46,11 @@ if use_gpu:
     #     device = torch.device('cpu')
 
 # ---------- load Conversation model ----------
-print("Initilizing model....")
-print("Loading language model...")
-tokenizer = AutoTokenizer.from_pretrained("PygmalionAI/pygmalion-1.3b", use_fast=True)
-config = AutoConfig.from_pretrained("PygmalionAI/pygmalion-1.3b", is_decoder=True)
-model = AutoModelForCausalLM.from_pretrained("PygmalionAI/pygmalion-1.3b", config=config, )
+# print("Initilizing model....")
+# print("Loading language model...")
+# tokenizer = AutoTokenizer.from_pretrained("PygmalionAI/pygmalion-1.3b", use_fast=True)
+# config = AutoConfig.from_pretrained("PygmalionAI/pygmalion-1.3b", is_decoder=True)
+# model = AutoModelForCausalLM.from_pretrained("PygmalionAI/pygmalion-1.3b", config=config, )
 
 # tokenizer = AutoTokenizer.from_pretrained("PygmalionAI/pygmalion-2-7b", use_fast=True)
 # config = AutoConfig.from_pretrained("PygmalionAI/pygmalion-2-7b", is_decoder=True)
@@ -60,9 +61,9 @@ model = AutoModelForCausalLM.from_pretrained("PygmalionAI/pygmalion-1.3b", confi
 # config = AutoConfig.from_pretrained("PygmalionAI/pygmalion-2-13b", is_decoder=True)
 # model = AutoModelForCausalLM.from_pretrained("PygmalionAI/pygmalion-2-13b", config=config, )
 
-if use_gpu: # load model to GPU
-  model = model.to(device)
-  print("Inference at half precision? (Y/N)")
+# if use_gpu: # load model to GPU
+#   model = model.to(device)
+#   print("Inference at half precision? (Y/N)")
 #   if input().lower() == 'y':
 #       print("Loading model at half precision...")
 #       model.half()
@@ -103,54 +104,56 @@ async def get_waifuapi(command: str, data: str):
     if command == "chat":
         msg = data
         # ----------- Create Response --------------------------
-        msg = talk.construct_msg(msg, talk.history_loop_cache)  # construct message input and cache History model
+        # msg = talk.construct_msg(msg, talk.history_loop_cache)  # construct message input and cache History model
         # 
         
         ## ----------- Will move this to server later -------- (16GB ram needed at least)
-        inputs = tokenizer(msg, return_tensors='pt')
-        if use_gpu:
-            inputs = inputs.to(device)
-        print("generate output ..\n")
-        out = model.generate(**inputs, max_length=len(inputs['input_ids'][0]) + 100, #todo 200 ?
-                             pad_token_id=tokenizer.eos_token_id)
-        conversation = tokenizer.decode(out[0])
-        print("conversation .. \n" + conversation)
+        # inputs = tokenizer(msg, return_tensors='pt')
+        # if use_gpu:
+        #     inputs = inputs.to(device)
+        # print("generate output ..\n")
+        # out = model.generate(**inputs, max_length=len(inputs['input_ids'][0]) + 100, #todo 200 ?
+        #                      pad_token_id=tokenizer.eos_token_id)
+        # conversation = tokenizer.decode(out[0])
+        out = await anyChars(msg)
+        print("conversation .. \n" + msg)
 
         ## --------------------------------------------------
 
         ## get conversation in proper format and create history from [last_idx: last_idx+2] conversation
         # talk.split_counter += 0
-        print("get_current_converse ..\n")
-        current_converse = talk.get_current_converse(conversation)
-        print("answer ..\n") # only print waifu answer since input already show
-        print(current_converse)
+        # print("get_current_converse ..\n")
+        # current_converse = talk.get_current_converse(conversation)
+        # print("answer ..\n") # only print waifu answer since input already show
+        # print(current_converse)
         # talk.history_loop_cache = '\n'.join(current_converse)  # update history for next input message
 
         # -------------- use machine translation model to translate to japanese and submit to client --------------
         print("cleaning ..\n")
-        cleaned_text = talk.clean_emotion_action_text_for_speech(current_converse[1])  # clean text for speech
-        cleaned_text = cleaned_text.split("Lilia: ")[-1]
-        cleaned_text = cleaned_text.replace("<USER>", "Fuse-kun")
-        cleaned_text = cleaned_text.replace("\"", "")
-        if cleaned_text:
-            print("cleaned_text\n"+ cleaned_text)
+        # cleaned_text = talk.clean_emotion_action_text_for_speech(current_converse[1])  # clean text for speech
+        # cleaned_text = cleaned_text.split("Lilia: ")[-1]
+        # cleaned_text = cleaned_text.replace("<USER>", "Fuse-kun")
+        # cleaned_text = cleaned_text.replace("\"", "")
+        msg = out
+        if msg != '':
+            print("cleaned_text\n"+ msg)
 
-            txt = cleaned_text  # initialize translated text as empty by default
-            if translation:
-                txt = translator.translate(cleaned_text)  # translate to [language] if translation is enabled
-                print("translated\n" + txt)
+            txt = msg  # initialize translated text as empty by default
+            # if translation:
+            #     txt = translator.translate(cleaned_text)  # translate to [language] if translation is enabled
+            #     print("translated\n" + txt)
 
             # ----------- Waifu Expressing ----------------------- (emotion expressed)
-            emotion = talk.emotion_analyze(current_converse[1])  # get emotion from waifu answer (last line)
-            print(f'Emotion Log: {emotion}')
-            emotion_to_express = 'netural'
-            if 'joy' in emotion:
-                emotion_to_express = 'happy'
+            # emotion = talk.emotion_analyze(current_converse[1])  # get emotion from waifu answer (last line)
+            # print(f'Emotion Log: {emotion}')
+            # emotion_to_express = 'netural'
+            # if 'joy' in emotion:
+            #     emotion_to_express = 'happy'
 
-            elif 'anger' in emotion:
-                emotion_to_express = 'angry'
+            # elif 'anger' in emotion:
+            #     emotion_to_express = 'angry'
 
-            print(f'Emotion to express: {emotion_to_express}')
+            # print(f'Emotion to express: {emotion_to_express}')
             # ---------------------------------------------------------------------
             # print("Silero tts")  
 
@@ -194,7 +197,7 @@ async def get_waifuapi(command: str, data: str):
                 output_audio_bytes = base64.b64encode(f.read())
             output_audio_bytes = output_audio_bytes.decode('utf-8')
 
-            return JSONResponse(content=f'{emotion_to_express}<split_token>{txt}<split_token>{output_audio_bytes}')
+            return JSONResponse(content=f'{txt[1]}<split_token>{txt}<split_token>{output_audio_bytes}')
         else:
             return JSONResponse(content=f'NONE<split_token> ')
     

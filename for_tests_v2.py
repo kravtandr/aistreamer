@@ -6,7 +6,6 @@ messages = []
 
 
 async def anyChars(msg):
-    while True:
         request = msg
         prompt = '''Имя - Фрирен
 Пол - женский
@@ -59,8 +58,11 @@ You: Опишите ваше тело и черты лица
                     if out and out.strip() not in ['', '\n']:
                         print(out)
                         messages[-1][1] = out
+                        return out
                 except Exception as e:
                     print(text)
+
+        
 
 
 def filter_and_shift(my_list: list):
