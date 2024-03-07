@@ -11,15 +11,58 @@ from twitchAPI.chat import Chat, EventData, ChatMessage, ChatSub, ChatCommand
 import asyncio
 logging.getLogger("requests").setLevel(logging.WARNING) # make requests logging only important stuff
 logging.getLogger("urllib3").setLevel(logging.WARNING) # make requests logging only important stuff
+logging.getLogger("requests").setLevel(logging.WARNING) # make requests logging only important stuff
+logging.getLogger("urllib3").setLevel(logging.WARNING) # make requests logging only important stuff
 
 talk = character_msg_constructor("Lilia", None) # initialize character_msg_constructor
 
+import ssl
+
+ssl._create_default_https_context = ssl._create_unverified_context
 
 
-APP_ID = '81p5jd0tto1jpnt7ykncg6urwpzc33'
-APP_SECRET = '2uw93kfvz6yua7sn07du8cdiig6kug'
+
+def cert():
+    import certifi
+    import os
+    import os.path
+    import ssl
+    import stat
+    import subprocess
+    import sys
+
+    STAT_0o775 = ( stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR
+             | stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP
+             | stat.S_IROTH |                stat.S_IXOTH )
+
+    openssl_dir, openssl_cafile = os.path.split(
+        ssl.get_default_verify_paths().openssl_cafile)
+
+    print(" -- pip install --upgrade certifi")
+    subprocess.check_call([sys.executable,
+        "-E", "-s", "-m", "pip", "install", "--upgrade", "certifi"])
+
+    import certifi
+
+    # change working directory to the default SSL directory
+    os.chdir(openssl_dir)
+    relpath_to_certifi_cafile = os.path.relpath(certifi.where())
+    print(" -- removing any existing file or link")
+    try:
+        os.remove(openssl_cafile)
+    except FileNotFoundError:
+        pass
+    print(" -- creating symlink to certifi certificate bundle")
+    os.symlink(relpath_to_certifi_cafile, openssl_cafile)
+    print(" -- setting permissions")
+    os.chmod(openssl_cafile, STAT_0o775)
+    print(" -- update complete")
+
+
+APP_ID = 'v0f353z2qpr8gpu90vj2yl34nl22vr'
+APP_SECRET = 'uyijbbf4z83dgeuegjoav6zc511urr'
 USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
-TARGET_CHANNEL = 'kravtandr'
+TARGET_CHANNEL = 'anyaai_bot'
 
 async def on_ready(ready_event: EventData):
     print('Bot is ready for work, joining channels')
@@ -83,7 +126,7 @@ async def run():
     twitch = await Twitch(APP_ID, APP_SECRET)
     auth = UserAuthenticator(twitch, USER_SCOPE)
     token, refresh_token = await auth.authenticate()
-    await twitch.set_user_authentication(token, USER_SCOPE, refresh_token)
+    await twitch.set_user_authentication(token, USER_SCOPE, refresh_token, validate=False)
     # user = await first(twitch.get_users(logins='kravtandr'))
     # # print the ID of your user or do whatever else you want with it
     # print(user.id)
@@ -142,6 +185,8 @@ def chat(msg, reset=False):
         exit()
     return r.text
 
+
+cert()
 split_counter = 0
 history = ''
 asyncio.run(run())
