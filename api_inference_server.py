@@ -49,8 +49,10 @@ async def get_waifuapi(command: str, data: str):
         done, pending = await asyncio.wait({task1})
         anyCharsAnswer = task1.result()
         # print("anyCharsAnswer = \n" + str(anyCharsAnswer))
-
+        anyCharsAnswer = anyCharsAnswer.replace('.', '')
         if anyCharsAnswer != '':
+            # delite '.' from anyCharsAnswer if . more than 1
+            print("Cleaned .. \n" + anyCharsAnswer)
             # ----------- Waifu Create Talking Audio -----------------------
             output_filename =  './audio_cache/output_sound.wav'
             filename="output_sound.wav"
