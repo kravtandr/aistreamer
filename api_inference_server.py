@@ -10,6 +10,7 @@ import base64
 import json
 import aiohttp
 
+
 messages = []
 history = ''
 print('--------Config----------')
@@ -64,8 +65,16 @@ async def get_waifuapi(command: str, data: str):
                 # ----------- Waifu Create Talking Audio -----------------------
                 output_filename =  './audio_cache/output_sound.wav'
                 filename="output_sound.wav"
-               
-                vocal_pipeline.tts(anyCharsAnswer, save_path=output_filename, voice_conversion=True)
+
+                import time
+
+                start_time = time.time()
+                silero(anyCharsAnswer, output_filename)
+                print("Silero --- %s seconds ---" % (time.time() - start_time))
+
+                # start_time = time.time()
+                # vocal_pipeline.tts(anyCharsAnswer, save_path=output_filename, voice_conversion=True)
+                # print("Gtts --- %s seconds ---" % (time.time() - start_time))
 
                 with open(output_filename, "rb") as f:
                     output_audio_bytes = base64.b64encode(f.read())
@@ -85,7 +94,43 @@ async def get_waifuapi(command: str, data: str):
 
 
 
+def silero(anyCharsAnswer, output_filename):
+    from omegaconf import OmegaConf
+    torch.hub.download_url_to_file('https://raw.githubusercontent.com/snakers4/silero-models/master/models.yml',
+                                'latest_silero_models.yml',
+                                progress=False)
+    from IPython.display import Audio, display
+    # ---------------------------------------------------------------------
+    print("Silero tts")  
 
+    tts_models = OmegaConf.load('latest_silero_models.yml') 
+    language = 'ru'
+    model_id = 'v4_ru'
+    device = torch.device('cuda')
+
+    tts_model, example_text = torch.hub.load(repo_or_dir='snakers4/silero-models',
+                                                model='silero_tts',
+                                                language=language,
+                                                speaker=model_id)
+    tts_model.to(device)  # gpu or cpu
+
+    sample_rate = 48000
+    speaker = 'baya'
+    put_accent=True
+    put_yo=True
+
+
+    audio = tts_model.apply_tts(text=anyCharsAnswer,
+                                    speaker=speaker,
+                                    sample_rate=sample_rate,
+                                    put_accent=put_accent,
+                                    put_yo=put_yo)
+    print("TTS text: ",anyCharsAnswer)
+    audio = Audio(audio, rate=sample_rate)
+    with open(output_filename, 'wb') as f:
+        f.write(audio.data)
+    return 
+    # ---------------------------------------------------------------------------------------
 async def anyChars(msg):
         request = msg
         prompt = '''
