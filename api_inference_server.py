@@ -67,7 +67,7 @@ async def get_waifuapi(command: str, data: str):
         print("_________2___________")
         msg = data
         print("User msg .. \n" + msg)
-        
+
         anyCharsAnswer = await anyChars(msg)
         
         # print("anyCharsAnswer = \n" + str(anyCharsAnswer))
@@ -140,6 +140,7 @@ def silero(anyCharsAnswer, output_filename):
     return 
     # ---------------------------------------------------------------------------------------
 async def anyChars(msg):
+        start_time = time.time()
         request = msg
         prompt = '''
 Имя - Аня
@@ -199,6 +200,7 @@ You: Опишите ваше тело,черты лица и характер
                     if out and out.strip() not in ['', '\n']:
                         print(out)
                         messages[-1][1] = out
+                        print("Anychars exit --- %s seconds ---" % (time.time() - start_time))
                         return out
                 except Exception as e:
                     print(text)
