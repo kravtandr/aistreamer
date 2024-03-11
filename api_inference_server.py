@@ -75,7 +75,25 @@ async def get_waifuapi(command: str, data: str):
                
 
                 start_time = time.time()
-                silero(anyCharsAnswer, output_filename)
+                # ---------------------------------------------------------------------
+                device = torch.device('cuda')
+                local_file = 'v4_ru.pt'
+                model = torch.package.PackageImporter(local_file).load_pickle("tts_models", "model")
+                model.to(device)  # gpu or cpu
+
+                sample_rate = 8000
+                speaker = 'baya'
+                put_accent=True
+                put_yo=True
+
+                audio = model.save_wav(text=anyCharsAnswer,
+                                        speaker=speaker,
+                                        sample_rate=sample_rate)
+
+                print("TTS text: ",anyCharsAnswer)
+                audio = Audio(audio, rate=sample_rate)
+
+                # ---------------------------------------------------------------------------------------
                 print("Silero exit --- %s seconds ---" % (time.time() - start_time))
 
                 # start_time = time.time()
@@ -101,20 +119,8 @@ async def get_waifuapi(command: str, data: str):
 
 
 def silero(anyCharsAnswer, output_filename):
-
     # ---------------------------------------------------------------------
-    start_time = time.time()
-    print("Silero tts")  
-
-    # tts_models = OmegaConf.load('latest_silero_models.yml') 
-    language = 'ru'
-    model_id = 'v4_ru'
     device = torch.device('cuda')
-
-    # tts_model, example_text = torch.hub.load(repo_or_dir='snakers4/silero-models',
-    #                                             model='silero_tts',
-    #                                             language=language,
-    #                                             speaker=model_id)
     local_file = 'v4_ru.pt'
     model = torch.package.PackageImporter(local_file).load_pickle("tts_models", "model")
     model.to(device)  # gpu or cpu
@@ -130,9 +136,6 @@ def silero(anyCharsAnswer, output_filename):
 
     print("TTS text: ",anyCharsAnswer)
     audio = Audio(audio, rate=sample_rate)
-    print("Silero exit --- %s seconds ---" % (time.time() - start_time))
-    # with open(output_filename, 'wb') as f:
-    #     f.write(audio.data)
     return 
     # ---------------------------------------------------------------------------------------
 async def anyChars(msg):
