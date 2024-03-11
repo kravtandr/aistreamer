@@ -67,7 +67,7 @@ async def get_waifuapi(command: str, data: str):
         print("_________2___________")
         msg = data
         print("User msg .. \n" + msg)
-
+        
         anyCharsAnswer = await anyChars(msg)
         
         # print("anyCharsAnswer = \n" + str(anyCharsAnswer))
