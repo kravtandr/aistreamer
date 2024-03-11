@@ -114,7 +114,7 @@ def silero(anyCharsAnswer, output_filename):
                                                 speaker=model_id)
     tts_model.to(device)  # gpu or cpu
 
-    sample_rate = 48000
+    sample_rate = 8000
     speaker = 'baya'
     put_accent=True
     put_yo=True
