@@ -13,8 +13,9 @@ logging.getLogger("requests").setLevel(logging.WARNING) # make requests logging 
 logging.getLogger("urllib3").setLevel(logging.WARNING) # make requests logging only important stuff
 logging.getLogger("requests").setLevel(logging.WARNING) # make requests logging only important stuff
 logging.getLogger("urllib3").setLevel(logging.WARNING) # make requests logging only important stuff
+import time
 
-talk = character_msg_constructor("Lilia", None) # initialize character_msg_constructor
+talk = character_msg_constructor("Аня", None) # initialize character_msg_constructor
 
 import ssl
 
@@ -77,8 +78,15 @@ async def on_message(msg: ChatMessage):
             # ----------- Create Response --------------------------
             con = msg.text
             print("con = ", con)
-            emo_answer = chat(con).replace("\"","") # send message to api
-            print("emo_answer = ", emo_answer)
+
+            emo_answer = "Internal Server Error"
+            while emo_answer == "Internal Server Error" and con != "":
+                print("Send req to model")
+                emo_answer = chat(con).replace("\"","") # send message to api
+                print("emo_answer = ", emo_answer)
+                time.sleep(2)
+
+
             emo, answer, audio = emo_answer.split("<split_token>")
             print("**"+emo)
             print("type audio: ", type(audio))
@@ -173,8 +181,8 @@ def chat(msg, reset=False):
         'data': msg,
     }
     try:
-        # r = requests.get('http://141.105.66.7:8267/waifuapi', params=params)
-        r = requests.get('http://127.0.0.1:8267/waifuapi', params=params)
+        r = requests.get('http://141.105.66.7:8267/waifuapi', params=params)
+        # r = requests.get('http://127.0.0.1:8267/waifuapi', params=params)
     except requests.exceptions.ConnectionError as e:
         print('--------- Exception Occured ---------')
         print('if you have run the server on different device, please specify the ip address of the server with the port')
@@ -190,63 +198,3 @@ cert()
 split_counter = 0
 history = ''
 asyncio.run(run())
-while True:
-    try:
-        con = str(input("You: "))
-        if con.lower() == 'exit':
-            print('Stopping...')
-            break # exit prototype
-
-        if con.lower() == 'reset':
-            print('Resetting...')
-            print(chat('None', reset=True))
-            continue # reset story skip to next loop
-
-        # ----------- Create Response --------------------------
-        print("con = ", con)
-        emo_answer = chat(con).replace("\"","") # send message to api
-        print("emo_answer = ", emo_answer)
-        emo, answer, audio = emo_answer.split("<split_token>")
-        print("**"+emo)
-        print("type audio: ", type(audio))
-        if len(answer) > 2:
-            use_answer = answer
-            sample_rate = 48000
-            # # audio_otput = Audio(audio, rate=sample_rate)
-            output_filename = 'test_output_sound.wav'
-            
-            
-            # baudio = bytes(audio, 'utf-8')
-            # print(baudio)
-            # Open the file in binary write mode ('wb')
-            import base64
-            audio = base64.b64decode(audio)
-            # audio = audio.encode('utf-8')
-            with open(output_filename, 'wb') as file:
-                file.write(audio)
-            
-            # wave_obj = sa.WaveObject.from_wave_file(output_filename) 
-            # play = wave_obj.play() 
-           
-            # display(sound_data)
-            # sf.write(output_filename, sound_data, sample_rate, 'PCM_24')
-            # ------------------------------------------------------
-            print(f'Answer: {answer}')
-            if answer.strip().endswith(f'{talk.name}:') or answer.strip() == '':
-                continue # skip audio processing if the answer is just the name (no talking)
-
-
-
-            # ----------- Waifu Talking -----------------------
-            wave_obj = sa.WaveObject.from_wave_file(output_filename) 
-            play = wave_obj.play() 
-
-            # --------------------------------------------------
-            if emo:  ## express emotion
-                waifu.express(emo)  # express emotion in Vtube Studio
-            # --------------------------------------------------
-    except Exception as e:
-        print('--------- Exception Occured ---------')
-        print(f'*Line {e.__traceback__.tb_lineno}: {e}')
-        print('-------------------------------------')
-     
