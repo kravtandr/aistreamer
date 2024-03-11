@@ -17,9 +17,7 @@ from IPython.display import Audio, display
 import time
 
 
-local_file = 'v4_ru.pt'
-model = torch.package.PackageImporter(local_file).load_pickle("tts_models", "model")
-model.to(device)  # gpu or cpu
+
 
 messages = []
 history = ''
@@ -32,6 +30,14 @@ vocal_pipeline = tts_pipeline()
 
 device = torch.device('cuda') # default to cpu
 use_gpu = torch.cuda.is_available()
+
+local_file = 'v4_ru.pt'
+model = torch.package.PackageImporter(local_file).load_pickle("tts_models", "model")
+model.to(device)  # gpu or cpu
+sample_rate = 8000
+speaker = 'baya'
+put_accent=True
+put_yo=True
 
 
 print('--------Finished!----------')
@@ -77,16 +83,16 @@ async def get_waifuapi(command: str, data: str):
                 output_filename =  'test.wav'
                 start_time = time.time()
                 # ---------------------------------------------------------------------
-
-                sample_rate = 8000
-                speaker = 'baya'
-                put_accent=True
-                put_yo=True
+                global speaker, sample_rate
+                print("_________4_1___________")
                 print("Config TTS : ",anyCharsAnswer,speaker, sample_rate)
-                audio = model.save_wav(anyCharsAnswer,speaker, sample_rate)
+                print("_________4_2___________")
+
+                model.save_wav(anyCharsAnswer,speaker, sample_rate)
+                print("_________4_3___________")
 
                 print("TTS text: ",anyCharsAnswer)
-                audio = Audio(audio, rate=sample_rate)
+                # audio = Audio(audio, rate=sample_rate)
 
                 # ---------------------------------------------------------------------------------------
                 print("Silero exit --- %s seconds ---" % (time.time() - start_time))
